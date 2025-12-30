@@ -1,39 +1,39 @@
 {
-    "name": "konnco/filament-timematrix",
-    "description": "A Filament form component for selecting time slots across days",
-    "keywords": [
-        "filament",
-        "laravel",
-        "time-matrix",
-        "form-component",
-        "schedule"
-    ],
-    "homepage": "https://github.com/gabrieladvent/filament-timematrix",
-    "type": "library",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "gabrieladvent",
-            "email": "your.email@example.com"
-        }
-    ],
-    "require": {
-        "php": "^8.1|^8.2|^8.3",
-        "filament/filament": "^3.0",
-        "illuminate/contracts": "^10.0|^11.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "Konnco\\FilamentTimeMatrix\\": "src/"
-        }
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Konnco\\FilamentTimeMatrix\\FilamentTimeMatrixServiceProvider"
-            ]
-        }
-    },
-    "minimum-stability": "dev",
-    "prefer-stable": true
+  "name": "konnco/filament-timematrix",
+  "description": "A Filament form component for selecting time slots across days",
+  "keywords": [
+    "filament",
+    "laravel",
+    "time-matrix",
+    "form-component",
+    "schedule"
+  ],
+  "homepage": "https://github.com/konnco/filament-timematrix",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "gabrieladvent",
+      "email": "bie.ritan112@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.1|^8.2|^8.3",
+    "filament/filament": "^3.0",
+    "illuminate/contracts": "^10.0|^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Konnco\\FilamentTimeMatrix\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Konnco\\FilamentTimeMatrix\\FilamentTimeMatrixServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }
