@@ -13,6 +13,7 @@ A Filament component that allows you to create an interactive time matrix for se
 - 🛠️ Facade for data validation and manipulation
 - 🎨 Customizable hours
 - 🌍 **All day names powered by Carbon** - automatic multi-language support
+- 🎨 Support dark theme
 
 ## Requirements
 
