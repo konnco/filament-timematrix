@@ -3,7 +3,6 @@
 namespace Konnco\FilamentTimeMatrix\Forms;
 
 use Filament\Forms\Components\Field;
-use Carbon\Carbon;
 use Konnco\FilamentTimeMatrix\Enums\Day;
 
 class TimeMatrix extends Field
@@ -11,11 +10,18 @@ class TimeMatrix extends Field
     protected string $view = 'filament-timematrix::time-matrix';
 
     protected array $hours = [];
+
     protected array $days = [];
+
     protected bool $showSelectAllHours = true;
+
     protected bool $showSelectAllDays = true;
+
     protected ?string $carbonLocale = null;
+
     protected string $carbonFormat = 'long';
+
+    protected bool $daysExplicitlySet = false;
 
     protected function setUp(): void
     {
@@ -93,13 +99,33 @@ class TimeMatrix extends Field
 
         $this->carbonFormat = $format;
 
-        $this->days = $this->generateDays();
+        if ($this->daysExplicitlySet && !empty($this->days)) {
+            $regeneratedDays = [];
+
+            foreach (array_keys($this->days) as $key) {
+                $dayEnum = match ($key) {
+                    'monday' => Day::MONDAY,
+                    'tuesday' => Day::TUESDAY,
+                    'wednesday' => Day::WEDNESDAY,
+                    'thursday' => Day::THURSDAY,
+                    'friday' => Day::FRIDAY,
+                    'saturday' => Day::SATURDAY,
+                    'sunday' => Day::SUNDAY,
+                };
+
+                $regeneratedDays[$key] = $dayEnum->label($this->carbonLocale, $this->carbonFormat);
+            }
+
+            $this->days = $regeneratedDays;
+        } else {
+            $this->days = $this->generateDays();
+        }
 
         return $this;
     }
 
     /**
-     * Set specific days using Day enum
+     * Set specific days using Day enum or Carbon day constants
      */
     public function days(array $days): static
     {
@@ -108,11 +134,24 @@ class TimeMatrix extends Field
         foreach ($days as $day) {
             if ($day instanceof Day) {
                 $key = $day->key();
+
                 $processedDays[$key] = $day->label($this->carbonLocale, $this->carbonFormat);
+            } elseif (is_int($day)) {
+                $isoDay = $day === 0 ? 7 : $day;
+
+                if ($isoDay >= 1 && $isoDay <= 7) {
+                    $dayEnum = Day::from($isoDay);
+
+                    $key = $dayEnum->key();
+
+                    $processedDays[$key] = $dayEnum->label($this->carbonLocale, $this->carbonFormat);
+                }
             }
         }
 
         $this->days = $processedDays;
+
+        $this->daysExplicitlySet = true;
 
         return $this;
     }
@@ -122,6 +161,8 @@ class TimeMatrix extends Field
      */
     public function weekdays(): static
     {
+        $this->daysExplicitlySet = true;
+
         return $this->days(Day::weekdays());
     }
 
@@ -130,6 +171,8 @@ class TimeMatrix extends Field
      */
     public function weekend(): static
     {
+        $this->daysExplicitlySet = true;
+
         return $this->days(Day::weekend());
     }
 
@@ -139,11 +182,11 @@ class TimeMatrix extends Field
     protected function generateDays(): array
     {
         $days = [];
+
         $allDays = [Day::MONDAY, Day::TUESDAY, Day::WEDNESDAY, Day::THURSDAY, Day::FRIDAY, Day::SATURDAY, Day::SUNDAY];
 
         foreach ($allDays as $day) {
             $key = $day->key();
-
             $days[$key] = $day->label($this->carbonLocale, $this->carbonFormat);
         }
 
