@@ -1,357 +1,454 @@
+![Screenshot of Login](./art/ilustration.jpg)
+
 # Filament Time Matrix
 
-A Filament component that allows you to create an interactive time matrix for selecting time slots based on days and hours. Perfect for scheduling systems, availability management, and time slot selection.
+An interactive Filament form component for selecting time slots across days with powerful validation and manipulation features.
 
 ## Features
 
-- 📅 Interactive matrix for selecting hours by day
-- ✅ Select all hours for a specific day
-- ✅ Select all days for a specific hour
-- ✅ Select all slots at once
-- 🔄 Reset all selections
-- 🔢 Selected slot counter
-- 🛠️ Facade for data validation and manipulation
-- 🎨 Customizable hours
-- 🌍 **All day names powered by Carbon** - automatic multi-language support
-- 🎨 Support dark theme
-
-## Requirements
-
-- PHP 8.1 or higher
-- Filament 3.0 or higher
-- Laravel 10.0 or 11.0
-- Carbon 2.0 or 3.0
+- 📅 Interactive day/hour matrix with bulk selection
+- ✅ Select all hours/days/slots at once
+- 🔄 Reset functionality
+- 🔢 Real-time slot counter
+- 🛠️ Facade for validation & manipulation
+- 🌍 Multi-language support via Carbon
+- 🎨 Dark mode support
 
 ## Installation
-
-You can install the package via composer:
 
 ```bash
 composer require konnco/filament-timematrix
 ```
 
-## Basic Usage
+## Requirements
 
-### Simple Implementation
+- **PHP**: 8.1 or higher
+- **Filament**: 3.0 or higher
+- **Laravel**: 10.0 or 11.0 or higher
+- **Carbon**: 2.0 or 3.0 or higher
+
+---
+
+## Quick Start
 
 ```php
 use Konnco\FilamentTimeMatrix\Forms\TimeMatrix;
 
-public static function form(Form $form): Form
-{
-    return $form
-        ->schema([
-            TimeMatrix::make('schedule')
-                ->label('Select Schedule')
-                ->required()
-                ->helperText('Select operational hours for each day'),
-        ]);
+TimeMatrix::make('schedule')
+    ->label('Select Schedule')
+    ->required();
+```
+
+---
+
+## Facade Methods Reference
+
+#### `isActiveAt(array $data, ?Carbon $dateTime = null): bool`
+
+Check if time slot is active at a specific time or now (default).
+
+**Parameters:**
+- `$data` (array): The time matrix data
+- `$dateTime` (Carbon|null, optional): DateTime to check. **Defaults to now()**
+
+**Returns:** `bool`
+
+**Examples:**
+```php
+use Konnco\FilamentTimeMatrix\Facades\TimeMatrix;
+use Carbon\Carbon;
+
+$data = ['monday' => [8 => true, 9 => true]];
+
+# Check if active right now
+TimeMatrix::isActiveAt($data);
+
+# Check if active at specific time
+TimeMatrix::isActiveAt($data, Carbon::parse('next monday 8:00')); # true
+TimeMatrix::isActiveAt($data, Carbon::tomorrow()->setTime(14, 0)); # true/false
+
+# Check if active 2 hours from now
+TimeMatrix::isActiveAt($data, now()->addHours(2));
+```
+
+---
+
+#### `hasActiveDay(array $data, string|Day|null $day = null): bool`
+
+Check if there are active slots on a specific day or today (default).
+
+**Parameters:**
+- `$data` (array): The time matrix data
+- `$day` (string|Day|null, optional): Day to check. **Defaults to today**
+
+**Returns:** `bool`
+
+**Examples:**
+```php
+use Konnco\FilamentTimeMatrix\Enums\Day;
+use Carbon\Carbon;
+
+$data = [
+    'monday' => [8 => true],
+    'tuesday' => [14 => true],
+];
+
+# Check if active today (no parameter needed!)
+TimeMatrix::hasActiveDay($data); # true/false
+
+# Check specific days
+TimeMatrix::hasActiveDay($data, Day::MONDAY);
+TimeMatrix::hasActiveDay($data, 'tuesday'); 
+TimeMatrix::hasActiveDay($data, Day::WEDNESDAY); 
+
+# Check tomorrow
+TimeMatrix::hasActiveDay($data, Day::fromCarbon(Carbon::tomorrow()));
+```
+
+---
+
+#### `getActiveHours(array $data, string|Day|null $day = null): array`
+
+Get active hours for a specific day or today (default).
+
+**Parameters:**
+- `$data` (array): The time matrix data  
+- `$day` (string|Day|null, optional): Day to get hours from. **Defaults to today**
+
+**Returns:** `array` - Array of hours like [8, 9, 10, 14, 15]
+
+**Examples:**
+```php
+use Konnco\FilamentTimeMatrix\Enums\Day;
+
+$data = [
+    'monday' => [8 => true, 9 => true, 14 => true],
+    'tuesday' => [10 => true, 11 => true],
+];
+
+# Get today's active hours
+TimeMatrix::getActiveHours($data); # [8, 9, 14] 
+
+# Get specific day's hours
+TimeMatrix::getActiveHours($data, Day::MONDAY); # [8, 9, 14]
+TimeMatrix::getActiveHours($data, 'tuesday'); # [10, 11]
+
+# Get tomorrow's hours
+TimeMatrix::getActiveHours($data, Day::fromCarbon(Carbon::tomorrow()));
+
+# Loop through today's hours
+foreach (TimeMatrix::getActiveHours($data) as $hour) {
+    echo sprintf('%02d:00 - Available', $hour);
 }
 ```
 
-## Customization
+---
 
-### Customize Hours
+### Validation Methods
 
+#### `validate(array $data): bool`
+
+Validate the structure of time matrix data.
+
+**Example:**
 ```php
-# Only 8 AM to 5 PM
-TimeMatrix::make('schedule')
-    ->hours(range(8, 17))
-    ->label('Working Hours');
+$valid = ['monday' => [8 => true, 9 => false]];
+TimeMatrix::validate($valid); # true
 
-# Specific hours
-TimeMatrix::make('schedule')
-    ->hours([6, 7, 8, 9, 10, 14, 15, 16, 17, 18])
-    ->label('Available Hours');
+$invalid = ['monday' => 'not an array'];
+TimeMatrix::validate($invalid); # false
 ```
 
-### Set Locale (Powered by Carbon)
+---
 
+#### `hasSelection(array $data): bool`
+
+Check if there is at least one selected slot.
+
+**Example:**
 ```php
-# Default locale (from config/app.php)
-TimeMatrix::make('schedule')
-    ->label('Schedule');
+$data = ['monday' => [8 => true, 9 => false]];
+TimeMatrix::hasSelection($data); # true
 
-# Specific locale - Bahasa Indonesia
-TimeMatrix::make('schedule')
-    ->locale('id')
-    ->label('Jadwal');
-
-# Specific locale - French
-TimeMatrix::make('schedule')
-    ->locale('fr')
-    ->label('Horaire');
-
-# With custom format
-TimeMatrix::make('schedule')
-    ->locale('id', 'short') # Sen, Sel, Rab, Kam, Jum, Sab, Min
-    ->label('Jadwal');
+$empty = ['monday' => [8 => false]];
+TimeMatrix::hasSelection($empty); # false
 ```
 
-### Set Day Format
+---
 
+### Statistics Methods
+
+#### `isFullyActive(array $data): bool`
+
+Check if schedule is 24/7 (all days, all hours).
+
+**Example:**
 ```php
-# Change format only (keeps current locale)
-TimeMatrix::make('schedule')
-    ->dayFormat('short') # Mon, Tue, Wed, ...
-    ->label('Schedule');
+TimeMatrix::isFullyActive($data); # true/false
 ```
 
-### Use Custom Day Keys
+---
+
+#### `getTotalActiveHours(array $data): int`
+
+Get total active hours per week.
+
+**Example:**
+```php
+$total = TimeMatrix::getTotalActiveHours($data); # e.g., 40
+```
+
+---
+
+#### `getActivePercentage(array $data): float`
+
+Get percentage of active hours (0-100).
+
+**Example:**
+```php
+$percentage = TimeMatrix::getActivePercentage($data); # e.g., 23.81
+```
+
+---
+
+#### `getActiveDays(array $data): array`
+
+Get days that have at least one active hour.
+
+**Returns:** Array of `Day` enums
+
+**Example:**
+```php
+$days = TimeMatrix::getActiveDays($data);
+# [Day::MONDAY, Day::TUESDAY, Day::FRIDAY]
+
+foreach ($days as $day) {
+    echo $day->label(); # Monday, Tuesday, Friday
+}
+```
+
+---
+
+#### `isDayHourActive(array $data, string|Day $day, int $hour): bool`
+
+Check if a specific day and hour combination is active.
+
+**Example:**
+```php
+TimeMatrix::isDayHourActive($data, day: Day::MONDAY, hour: 9); # true/false
+TimeMatrix::isDayHourActive($data, day: 'friday', hour: 18); # true/false
+```
+
+---
+
+### Time Query Methods
+
+#### `getNextAvailableSlot(array $data, Carbon $from): ?Carbon`
+
+Get next available slot from a specific time.
+
+**Example:**
+```php
+$next = TimeMatrix::getNextAvailableSlot($data, now());
+if ($next) {
+    echo $next->format('l, H:i'); # "Monday, 08:00"
+}
+```
+
+---
+
+#### `getSlotsInRange(array $data, Carbon $start, Carbon $end): array`
+
+Get all slots within a date range.
+
+**Example:**
+```php
+$slots = TimeMatrix::getSlotsInRange(
+    $data,
+    now()->startOfWeek(),
+    now()->endOfWeek()
+);
+
+foreach ($slots as $slot) {
+    echo $slot->format('D H:i') . "\n";
+}
+```
+
+---
+
+#### `toCarbonSlots(array $data, ?Carbon $referenceWeek = null): array`
+
+Convert to Carbon instances for a specific week.
+
+**Example:**
+```php
+# Current week
+$slots = TimeMatrix::toCarbonSlots($data);
+
+# Next week
+$nextWeek = now()->addWeek();
+$slots = TimeMatrix::toCarbonSlots($data, $nextWeek);
+```
+
+---
+
+### Formatting Methods
+
+#### `toReadableFormat(array $data): array`
+
+Convert to simplified format.
+
+**Returns:** `['monday' => [8, 9, 10], 'tuesday' => [14, 15]]`
+
+**Example:**
+```php
+$readable = TimeMatrix::toReadableFormat($data);
+```
+
+---
+
+#### `formatDaySchedule(array $data, string|Day $day): string`
+
+Format single day to human-readable string.
+
+**Returns:** String like "08:00-10:59, 14:00-16:59"
+
+**Example:**
+```php
+$schedule = TimeMatrix::formatDaySchedule($data, Day::MONDAY);
+# "08:00-10:59, 14:00-16:59"
+```
+
+---
+
+#### `formatAllDays(array $data, ?string $locale = null): array`
+
+Format all days with localized labels.
+
+**Example:**
+```php
+$formatted = TimeMatrix::formatAllDays($data, 'en');
+# [
+#     'Monday' => '08:00-10:59, 14:00-16:59',
+#     'Tuesday' => '14:00-15:59'
+# ]
+
+$formatted = TimeMatrix::formatAllDays($data, 'id');
+# [
+#     'Senin' => '08:00-10:59, 14:00-16:59',
+#     'Selasa' => '14:00-15:59'
+# ]
+```
+
+---
+
+## Real-World Usage Examples
+
+### 1. Check Merchant Status
 
 ```php
-# Custom keys with specific locale and format
-TimeMatrix::make('schedule')
-    ->dayKeys(
-        ['mon', 'tue', 'wed', 'thu', 'fri'], # Only 5 days
-        'id',    # locale
-        'short'  # format
+use Konnco\FilamentTimeMatrix\Facades\TimeMatrix;
+
+class StoreService
+{
+    public function getOpenStores()
+    {
+        return Store::all()->filter(function ($store$) {
+            # No parameter = check now!
+            return TimeMatrix::isActiveAt($store$->operational_hours);
+        });
+    }
+    
+    public function countOpenNow(): int
+    {
+        return Store::get()->filter(fn($store) => 
+            TimeMatrix::isActiveAt($store->operational_hours)
+        )->count();
+    }
+    
+    public function getOpenTomorrow()
+    {
+        return Store::get()->filter(fn($store) =>
+            TimeMatrix::hasActiveDay(
+                $store->operational_hours,
+                Day::fromCarbon(Carbon::tomorrow())
+            )
+        );
+    }
+}
+```
+
+---
+
+### 2. Display in Infolist
+
+```php
+use Filament\Infolists\Components\TextEntry;
+
+TextEntry::make('schedule')
+    ->label('Status Now')
+    ->state(fn($record) => TimeMatrix::isActiveAt($record->schedule) 
+        ? '✓ Open' 
+        : '✗ Closed'
     )
-    ->label('Jadwal Kerja');
+    ->badge()
+    ->color(fn($record) => TimeMatrix::isActiveAt($record->schedule) 
+        ? 'success' 
+        : 'danger'
+    ),
 
-# Single day
-TimeMatrix::make('schedule')
-    ->dayKeys(['monday'])
-    ->locale('en')
-    ->label('Monday Schedule');
+TextEntry::make('schedule')
+    ->label('Today\'s Hours')
+    ->state(function ($record) {
+        $hours = TimeMatrix::getActiveHours($record->schedule); # Today by default!
+        return empty($hours) 
+            ? 'Closed today'
+            : implode(', ', array_map(fn($h) => sprintf('%02d:00', $h), $hours));
+    }),
 ```
+---
 
-### Helper Methods for Common Patterns
+## API Methods Summary
 
-```php
-# Weekdays only (Monday-Friday) with default keys
-TimeMatrix::make('schedule')
-    ->weekdaysOnly() # Set days first
-    ->locale('id')   # Then set locale
-    ->label('Jadwal Kerja');
+### Smart Default Methods (NEW!)
+| Method | Default Behavior | Usage |
+|--------|-----------------|-------|
+| `isActiveAt($data, ?$dateTime)` | Checks **now** if no param | `isActiveAt($data)` |
+| `hasActiveDay($data, ?$day)` | Checks **today** if no param | `hasActiveDay($data)` |
+| `getActiveHours($data, ?$day)` | Gets **today's** hours if no param | `getActiveHours($data)` |
 
-# Weekdays with custom keys and locale in one call
-TimeMatrix::make('schedule')
-    ->weekdaysOnly(['sen', 'sel', 'rab', 'kam', 'jum'], 'id', 'short')
-    ->label('Jadwal Kerja');
+### All Available Methods
 
-# Weekend only (Saturday-Sunday) with default keys
-TimeMatrix::make('schedule')
-    ->weekendOnly()  # Set days first
-    ->locale('id')   # Then set locale
-    ->label('Jadwal Akhir Pekan');
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `validate($data)` | `bool` | Validate structure |
+| `hasSelection($data)` | `bool` | Check if has selections |
+| `isActiveAt($data, ?$dateTime)` | `bool` | Check active at time (default: now) |
+| `hasActiveDay($data, ?$day)` | `bool` | Check day has active slots (default: today) |
+| `getActiveHours($data, ?$day)` | `array` | Get active hours (default: today) |
+| `isFullyActive($data)` | `bool` | Check if 24/7 |
+| `getTotalActiveHours($data)` | `int` | Total hours per week |
+| `getActivePercentage($data)` | `float` | Coverage percentage |
+| `getActiveDays($data)` | `array<Day>` | Days with active slots |
+| `isDayHourActive($data, $day, $hour)` | `bool` | Check specific day+hour |
+| `getNextAvailableSlot($data, $from)` | `?Carbon` | Next available slot |
+| `getSlotsInRange($data, $start, $end)` | `array<Carbon>` | Slots in range |
+| `toCarbonSlots($data, ?$week)` | `array<Carbon>` | Convert to Carbon |
+| `formatDaySchedule($data, $day)` | `string` | Format single day |
+| `formatAllDays($data, ?$locale)` | `array` | Format all days |
+| `toReadableFormat($data)` | `array` | Simplified format |
 
-# Weekend with custom keys and locale in one call
-TimeMatrix::make('schedule')
-    ->weekendOnly(['sab', 'min'], 'id', 'short')
-    ->label('Jadwal Akhir Pekan');
-```
+---
 
-**Important:** When using helper methods like `weekdaysOnly()` or `weekendOnly()`:
-- If you pass locale and format parameters directly to the helper, you're done
-- If you chain with `->locale()`, make sure to call the helper method (weekdaysOnly/weekendOnly) BEFORE `->locale()`
+## License
 
-### Hide Select All Buttons
-
-```php
-TimeMatrix::make('schedule')
-    ->showSelectAllHours(false)
-    ->showSelectAllDays(false);
-```
-
-### Complete Example
-
-```php
-use Konnco\FilamentTimeMatrix\Forms\TimeMatrix;
-
-Forms\Components\Section::make('Schedule Settings')
-    ->description('Configure your availability schedule')
-    ->schema([
-        TimeMatrix::make('working_hours')
-            ->label('Working Hours')
-            ->locale('id', 'long') # Indonesian locale with long format
-            ->hours(range(8, 17)) # 8 AM to 5 PM
-            ->required()
-            ->helperText('Select your working hours for each day')
-            ->showSelectAllHours(true)
-            ->showSelectAllDays(true)
-            ->columnSpanFull(),
-    ]),
-```
-
-## Data Structure
-
-The component stores data in the following format:
-
-```php
-[
-    'monday' => [
-        0 => false,
-        1 => false,
-        8 => true,  # Selected
-        9 => true,  # Selected
-        10 => true, # Selected
-        # ... other hours
-    ],
-    'tuesday' => [
-        # ... hours
-    ],
-    # ... other days
-]
-```
-
-## Using the Facade
-
-### Import Facade
-
-```php
-use Konnco\FilamentTimeMatrix\Facades\TimeMatrix;
-```
-
-### Validation
-
-```php
-# Validate data structure
-$isValid = TimeMatrix::validate($scheduleData);
-
-# Check if any slot is selected
-$hasSelection = TimeMatrix::hasSelection($scheduleData);
-
-# Count selected slots
-$count = TimeMatrix::countChecked($scheduleData);
-```
-
-### Retrieve Data
-
-```php
-# Get all selected slots
-$slots = TimeMatrix::getCheckedSlots($scheduleData);
-# Returns: [['day' => 'monday', 'hour' => 8], ['day' => 'monday', 'hour' => 9], ...]
-
-# Get days with selected slots
-$days = TimeMatrix::getCheckedDays($scheduleData);
-# Returns: ['monday', 'wednesday', 'friday']
-
-# Get hours with selected slots
-$hours = TimeMatrix::getCheckedHours($scheduleData);
-# Returns: [8, 9, 10, 14, 15]
-```
-
-### Check Specific Slots
-
-```php
-# Check if specific slot is selected
-$isSelected = TimeMatrix::isSlotChecked($scheduleData, 'monday', 8);
-
-# Check if day has any selection
-$hasDaySelection = TimeMatrix::hasDaySelection($scheduleData, 'monday');
-
-# Check if hour has any selection
-$hasHourSelection = TimeMatrix::hasHourSelection($scheduleData, 8);
-```
-
-### Format Output
-
-```php
-# Convert to readable format
-$readable = TimeMatrix::toReadableFormat($scheduleData);
-# Returns: ['monday' => [8, 9, 10], 'tuesday' => [14, 15]]
-
-# Convert to human readable strings
-$humanReadable = TimeMatrix::toHumanReadable($scheduleData);
-# Returns: ['Monday: 08:00-08:59, 09:00-09:59, 10:00-10:59', ...]
-
-# With custom day labels
-$humanReadable = TimeMatrix::toHumanReadable($scheduleData, [
-    'monday' => 'Senin',
-    'tuesday' => 'Selasa',
-    # ...
-]);
-# Returns: ['Senin: 08:00-08:59, 09:00-09:59', ...]
-```
-
-## Complete Facade Methods Reference
-
-| Method | Description | Parameters | Return |
-|--------|-------------|------------|--------|
-| `validate($data)` | Validate data structure | `array $data` | `bool` |
-| `hasSelection($data)` | Check if any slot is selected | `array $data` | `bool` |
-| `getCheckedSlots($data)` | Get all selected slots | `array $data` | `array` |
-| `isSlotChecked($data, $day, $hour)` | Check specific slot | `array $data, string $day, int $hour` | `bool` |
-| `countChecked($data)` | Count selected slots | `array $data` | `int` |
-| `getCheckedDays($data)` | Get days with selected slots | `array $data` | `array` |
-| `getCheckedHours($data)` | Get hours with selected slots | `array $data` | `array` |
-| `toReadableFormat($data)` | Format to readable array | `array $data` | `array` |
-| `toHumanReadable($data, $labels)` | Format to readable strings | `array $data, array $labels = []` | `array` |
-| `hasDaySelection($data, $day)` | Check if day has any slots | `array $data, string $day` | `bool` |
-| `hasHourSelection($data, $hour)` | Check if hour has any slots | `array $data, int $hour` | `bool` |
-
-## Practical Examples
-
-### Display Schedule in Blade View
-
-```blade
-@php
-    $schedule = $record->schedule; # Get from model
-    $readable = \Konnco\FilamentTimeMatrix\Facades\TimeMatrix::toHumanReadable($schedule, [
-        'monday' => 'Senin',
-        'tuesday' => 'Selasa',
-        'wednesday' => 'Rabu',
-        'thursday' => 'Kamis',
-        'friday' => 'Jumat',
-        'saturday' => 'Sabtu',
-        'sunday' => 'Minggu',
-    ]);
-@endphp
-
-<div class="schedule-display">
-    @foreach($readable as $daySchedule)
-        <p>{{ $daySchedule }}</p>
-    @endforeach
-</div>
-```
-
-### Check Availability
-
-```php
-use Konnco\FilamentTimeMatrix\Facades\TimeMatrix;
-
-public function isAvailable($schedule, $day, $hour): bool
-{
-    return TimeMatrix::isSlotChecked($schedule, $day, $hour);
-}
-
-# Usage
-if ($this->isAvailable($record->schedule, 'monday', 9)) {
-    # Available on Monday at 9 AM
-}
-```
-
-### Validation in Form Request
-
-```php
-use Konnco\FilamentTimeMatrix\Facades\TimeMatrix;
-
-public function rules()
-{
-    return [
-        'schedule' => [
-            'required',
-            'array',
-            function ($attribute, $value, $fail) {
-                if (!TimeMatrix::validate($value)) {
-                    $fail('The schedule format is invalid.');
-                }
-                
-                if (!TimeMatrix::hasSelection($value)) {
-                    $fail('Please select at least one time slot.');
-                }
-            },
-        ],
-    ];
-}
-```
+MIT License. See [LICENSE](LICENSE) for details.
 
 ## Credits
 
 - [Konnco Studio](https://github.com/konnco)
 - [All Contributors](../../contributors)
 
-## License
+## Support
 
-The MIT License (MIT). Please see [License File](LICENSE) for more information.
+For issues and feature requests, please use the [GitHub issue tracker](https://github.com/konnco/filament-timematrix/issues).
