@@ -14,11 +14,6 @@ An interactive Filament form component for selecting time slots across days with
 - 🌍 Multi-language support via Carbon
 - 🎨 Dark mode support
 
-## Installation
-
-```bash
-composer require konnco/filament-timematrix
-```
 
 ## Requirements
 
@@ -29,8 +24,15 @@ composer require konnco/filament-timematrix
 
 ---
 
+## Installation
+
+```bash
+composer require konnco/filament-timematrix
+```
+
 ## Quick Start
 
+### Simple Usage
 ```php
 use Konnco\FilamentTimeMatrix\Forms\TimeMatrix;
 
@@ -38,6 +40,69 @@ TimeMatrix::make('schedule')
     ->label('Select Schedule')
     ->required();
 ```
+
+This will create a time matrix with:
+- All 7 days of the week (Monday - Sunday)
+- All 24 hours (0-23)
+- Select all hours/days buttons enabled
+- Using your app's default locale
+
+### Complete Usage
+```php
+use Konnco\FilamentTimeMatrix\Forms\TimeMatrix;
+use Konnco\FilamentTimeMatrix\Enums\Day;
+use Carbon\CarbonInterface;
+
+TimeMatrix::make('schedule')
+    ->label('Select Schedule')
+    ->required()
+    ->helperText('Select operational hours for each day')
+    
+    # Set custom hour range (9 AM - 5 PM)
+    ->hours(startTime: 9, endTime: 17)
+
+    # OR use business hours shortcut with default range from 9 AM - 5 PM
+    ->businessHours()
+    
+    # Set specific days using Day enum
+    ->days([
+        Day::MONDAY,
+        Day::TUESDAY,
+        Day::WEDNESDAY,
+    ])
+    # OR use Carbon constants
+    ->days([
+        CarbonInterface::MONDAY,
+        CarbonInterface::SATURDAY,
+    ])
+    # OR use helper methods
+    ->weekdays() # Monday - Friday only
+    ->weekend()  # Saturday - Sunday only
+    
+    # Set locale and format
+    ->locale('id', 'long')  # long: Monday, short: Mon,
+    ->locale('en', 'short')
+    
+    # Toggle select all buttons
+    ->showSelectAllHours(false)
+    ->showSelectAllDays(false)
+    
+    ->columnSpanFull();
+```
+
+### Available Methods
+
+| Method | Description | Example |
+|--------|-------------|---------|
+| `hours(int $startTime, int $endTime)` | Set custom hour range (0-23) | `->hours(8, 18)` |
+| `businessHours(int $startTime, int $endTime)` | Shortcut for business hours | `->businessHours(9, 17)` |
+| `days(array $days)` | Set specific days (Day enum or Carbon constants) | `->days([Day::MONDAY, Day::FRIDAY])` |
+| `weekdays()` | Monday to Friday only | `->weekdays()` |
+| `weekend()` | Saturday and Sunday only | `->weekend()` |
+| `locale(?string $locale, string $format)` | Set locale and format (long/short/min) | `->locale('id', 'short')` |
+| `showSelectAllHours(bool $show)` | Show/hide select all hours button | `->showSelectAllHours(false)` |
+| `showSelectAllDays(bool $show)` | Show/hide select all days button | `->showSelectAllDays(false)` |
+
 
 ---
 
